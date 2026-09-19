@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Pengurusan Kehadiran Majlis - Negeri Kedah</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; padding: 0 !important; }
+      .print-shadow-none { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+    }
+
+    /* Custom Interactivity Styles for Selected Radio Cards */
+    .radio-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .radio-card:hover {
+      transform: translateY(-2px);
+    }
+    .radio-card:has(input:checked) {
+      border-color: #0f172a !important;
+      background-color: #f8fafc !important;
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+    }
+    .radio-card:has(input:checked) .icon-box {
+      background-color: #0f172a !important;
+      color: #ffffff !important;
+      transform: scale(1.05);
+    }
+    .radio-card:has(input:checked) .check-badge {
+      display: flex !important;
+      animation: popIn 0.2s ease-out forwards;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 min-h-screen py-8 px-4 font-sans text-slate-800 antialiased selection:bg-slate-900 selection:text-white">
+
+  <div class="max-w-3xl mx-auto">
+    
+    <!-- BANNER ATAS (LOGO KEDAH & TAB PEMILIH) -->
+    <div class="no-print bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-2xl shadow-xl shadow-slate-200/50 mb-6 border border-slate-200/80 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3.5">
+        <!-- LOGO JATA KEDAH -->
+        <div class="w-12 h-12 rounded-xl bg-slate-900/5 p-1.5 flex items-center justify-center border border-slate-200/60 shadow-inner">
+          <img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/1/11/Coat_of_arms_of_Kedah.svg/3840px-Coat_of_arms_of_Kedah.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail" alt="Logo Kedah" class="max-h-full max-w-full object-contain">
+        </div>
+        <div>
+          <h1 class="font-extrabold text-base sm:text-lg uppercase tracking-wider text-slate-900">Sistem Kehadiran Majlis</h1>
+          <p class="text-xs text-slate-500 font-semibold">Negeri Kedah Darul Aman</p>
+        </div>
+      </div>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <button onclick="switchTab('admin')" id="tab-admin-btn" class="flex-1 sm:flex-none px-5 py-2.5 text-xs font-extrabold rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all duration-200 shadow-lg shadow-slate-900/20 active:scale-95">⚙️ Tetapan Admin</button>
+        <a href="guest.html" target="_blank" class="flex-1 sm:flex-none px-5 py-2.5 text-xs font-extrabold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300/80 transition-all duration-200 active:scale-95 text-center">📝 Buka Borang Tetamu</a>
+      </div>
+    </div>
+
+    <!-- ==================== BAHAGIAN 1: TETAPAN ADMIN ==================== -->
+    <div id="admin-section" class="bg-white p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 mb-8 transition-all">
+      <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-6 pb-3 border-b border-slate-100 flex items-center gap-3">
+        <span class="p-2 bg-slate-100 rounded-lg text-sm">⚙️</span> Tetapan Admin (Urus Setia)
+      </h2>
+      <form id="adminForm" class="space-y-5">
+        <div>
+          <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Nama Majlis <span class="text-red-500">*</span></label>
+          <input type="text" id="admin_nama_majlis" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="Contoh: Majlis Anugerah Cemerlang 2026" required>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Tarikh Majlis <span class="text-red-500">*</span></label>
+            <input type="date" id="admin_tarikh" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" required>
+          </div>
+          <div>
+            <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Masa Majlis <span class="text-red-500">*</span></label>
+            <input type="time" id="admin_masa" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Lokasi / Tempat Majlis <span class="text-red-500">*</span></label>
+          <input type="text" id="admin_lokasi" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="Contoh: Dewan Utama, Wisma Darul Aman, Alor Setar" required>
+        </div>
+
+        <!-- TETAPAN JENIS KEHADIRAN -->
+        <div class="space-y-2 pt-2">
+          <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Jenis Kehadiran Tetamu <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <label class="radio-card cursor-pointer border-2 border-slate-200 rounded-2xl p-4 flex items-center gap-3.5 bg-white relative">
+              <input type="radio" name="admin_max_guests" value="1" class="sr-only" checked>
+              <div class="icon-box w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-xl transition-all shadow-sm">👤</div>
+              <div>
+                <div class="font-bold text-sm text-slate-900">Seorang</div>
+                <div class="text-xs text-slate-500 font-medium mt-0.5">Hadir / Diwakili / Tidak Hadir</div>
+              </div>
+              <div class="check-badge hidden absolute top-3 right-3 w-5 h-5 bg-slate-900 text-white rounded-full items-center justify-center font-bold text-[10px] shadow">✓</div>
+            </label>
+
+            <label class="radio-card cursor-pointer border-2 border-slate-200 rounded-2xl p-4 flex items-center gap-3.5 bg-white relative">
+              <input type="radio" name="admin_max_guests" value="2" class="sr-only">
+              <div class="icon-box w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-xl transition-all shadow-sm">👥</div>
+              <div>
+                <div class="font-bold text-sm text-slate-900">Berdua</div>
+                <div class="text-xs text-slate-500 font-medium mt-0.5">Hadir 1 / Hadir 2 / Tidak Hadir</div>
+              </div>
+              <div class="check-badge hidden absolute top-3 right-3 w-5 h-5 bg-slate-900 text-white rounded-full items-center justify-center font-bold text-[10px] shadow">✓</div>
+            </label>
+
+          </div>
+        </div>
+        
+        <!-- PILIHAN PDF ATUR CARA -->
+        <div class="p-5 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
+          <label class="flex items-center gap-3 font-bold text-sm text-slate-800 cursor-pointer select-none">
+            <input type="checkbox" id="admin_enable_pdf" onclick="togglePdfInput(this.checked)" class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 accent-slate-900 transition">
+            <span>Sediakan pautan download PDF Atur Cara</span>
+          </label>
+          
+          <div id="pdf-input-container" class="hidden pt-3 border-t border-slate-200">
+            <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-1.5">Pautan PDF Atur Cara (Google Drive / Direct Link) <span class="text-red-500">*</span></label>
+            <input type="url" id="admin_pdf_url" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="https://drive.google.com/file/d/.../view">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">No. WhatsApp Urus Setia (Format: 60123456789) <span class="text-red-500">*</span></label>
+          <input type="tel" id="admin_whatsapp_no" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="Contoh: 60123456789" required>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Google Sheets Web App URL <span class="text-red-500">*</span></label>
+          <input type="url" id="admin_sheets_url" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="https://script.google.com/macros/s/.../exec" required>
+        </div>
+
+        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl transition duration-200 shadow-lg shadow-slate-900/20 active:scale-[0.99] uppercase tracking-wider text-sm mt-4">Simpan Tetapan & Aktifkan Borang</button>
+      </form>
+    </div>
+
+  </div>
+
+  <script>
+    let config = {
+      namaMajlis: '',
+      tarikh: '',
+      masa: '',
+      lokasi: '',
+      maxGuests: '1',
+      hasPdf: false,
+      pdfUrl: '',
+      whatsappNo: '',
+      sheetsUrl: ''
+    };
+
+    let globalFormData = {}; // Simpan data sementara sebelum submit
+
+    function togglePdfInput(checked) {
+      const container = document.getElementById('pdf-input-container');
+      const pdfUrlInput = document.getElementById('admin_pdf_url');
+      if (checked) {
+        container.classList.remove('hidden');
+        pdfUrlInput.required = true;
+      } else {
+        container.classList.add('hidden');
+        pdfUrlInput.required = false;
+        pdfUrlInput.value = '';
+      }
+    }
+
+    function switchTab(tab) {
+      // Admin page is intentionally separate from the public guest form.
+      // Kept for compatibility; opening the public form uses guest.html.
+      if (tab === 'guest') window.open('guest.html', '_blank');
+    }
+
+    function handleStatusChange(type) {
+      const wakilContainer = document.getElementById('wakil-container');
+      const p2Container = document.getElementById('person2-container');
+      
+      const namaWakil = document.getElementById('nama_wakil');
+      const jawatanWakil = document.getElementById('jawatan_wakil');
+      const noTelWakil = document.getElementById('no_tel_wakil');
+
+      const namaP2 = document.getElementById('nama_p2');
+      const jawatanP2 = document.getElementById('jawatan_p2');
+
+      wakilContainer.classList.add('hidden');
+      p2Container.classList.add('hidden');
+      namaWakil.required = false;
+      jawatanWakil.required = false;
+      noTelWakil.required = false;
+      namaP2.required = false;
+      jawatanP2.required = false;
+
+      if (type === 'wakil') {
+        wakilContainer.classList.remove('hidden');
+        namaWakil.required = true;
+        jawatanWakil.required = true;
+        noTelWakil.required = true;
+      } else if (type === 'hadir_2') {
+        p2Container.classList.remove('hidden');
+        namaP2.required = true;
+        jawatanP2.required = true;
+      }
+    }
+
+    // Load existing configuration from Google Sheets.
+    async function loadAdminConfigFromServer() {
+      const url = document.getElementById('admin_sheets_url').value.trim();
+      if (!url) return;
+
+      try {
+        const response = await fetch(url + '?t=' + Date.now());
+        const result = await response.json();
+
+        if (result.result !== 'success') return;
+
+        const savedConfig = result.config || {};
+
+        document.getElementById('admin_nama_majlis').value = savedConfig.namaMajlis || '';
+        document.getElementById('admin_tarikh').value = savedConfig.tarikh || '';
+        document.getElementById('admin_masa').value = savedConfig.masa || '';
+        document.getElementById('admin_lokasi').value = savedConfig.lokasi || '';
+
+        const maxGuestsRadio = document.querySelector(
+          `input[name="admin_max_guests"][value="${savedConfig.maxGuests || '1'}"]`
+        );
+        if (maxGuestsRadio) maxGuestsRadio.checked = true;
+
+        document.getElementById('admin_enable_pdf').checked = !!savedConfig.pdfUrl;
+        document.getElementById('admin_pdf_url').value = savedConfig.pdfUrl || '';
+        togglePdfInput(!!savedConfig.pdfUrl);
+
+        document.getElementById('admin_whatsapp_no').value = savedConfig.whatsappNo || '';
+      } catch (e) {
+        console.log("Belum dapat memuat tetapan dari Google Sheets:", e);
+      }
+    }
+
+    (function loadAdminUrl() {
+      try {
+        const savedUrl = localStorage.getItem('attendanceSheetsUrl') || '';
+        document.getElementById('admin_sheets_url').value = savedUrl;
+        if (savedUrl) loadAdminConfigFromServer();
+      } catch (e) {
+        console.error("Gagal memuat URL backend:", e);
+      }
+    })();
+
+    // 1. ADMIN SIMPAN TETAPAN
+    document.getElementById('adminForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      config.namaMajlis = document.getElementById('admin_nama_majlis').value;
+      config.tarikh = document.getElementById('admin_tarikh').value;
+      config.masa = document.getElementById('admin_masa').value;
+      config.lokasi = document.getElementById('admin_lokasi').value;
+      config.maxGuests = document.querySelector('input[name="admin_max_guests"]:checked').value;
+      config.hasPdf = document.getElementById('admin_enable_pdf').checked;
+      config.pdfUrl = document.getElementById('admin_pdf_url').value;
+      config.whatsappNo = document.getElementById('admin_whatsapp_no').value.replace(/[^0-9]/g, '');
+      config.sheetsUrl = document.getElementById('admin_sheets_url').value;
+
+      document.getElementById('display_nama_majlis').textContent = config.namaMajlis;
+      document.getElementById('display_tarikh').textContent = config.tarikh;
+      document.getElementById('display_masa').textContent = config.masa;
+      document.getElementById('display_lokasi').textContent = config.lokasi;
+
+      const radios = document.querySelectorAll('input[name="status_kehadiran"]');
+      radios.forEach(r => r.checked = false);
+      handleStatusChange('reset');
+
+      const optionHadir2 = document.getElementById('option_hadir_2');
+      const optionWakil = document.getElementById('option_wakil');
+      const labelHadirSingle = document.getElementById('label_hadir_single');
+      const subHadirSingle = document.getElementById('sub_hadir_single');
+
+      if (config.maxGuests === '2') {
+        optionHadir2.classList.remove('hidden');
+        optionHadir2.classList.add('flex');
+        optionWakil.classList.add('hidden');
+        optionWakil.classList.remove('flex');
+        labelHadirSingle.textContent = "Hadir (1 Orang)";
+        subHadirSingle.textContent = "Seorang Sahaja";
+        subHadirSingle.classList.remove('hidden');
+      } else {
+        optionHadir2.classList.add('hidden');
+        optionHadir2.classList.remove('flex');
+        optionWakil.classList.remove('hidden');
+        optionWakil.classList.add('flex');
+        labelHadirSingle.textContent = "Hadir";
+        subHadirSingle.classList.add('hidden');
+      }
+
+      const pdfWrapper = document.getElementById('pdf-button-wrapper');
+      if (config.hasPdf && config.pdfUrl) {
+        document.getElementById('btn_download_pdf').href = config.pdfUrl;
+        pdfWrapper.classList.remove('hidden');
+      } else {
+        pdfWrapper.classList.add('hidden');
+      }
+
+      if (!config.sheetsUrl) {
+        alert("Sila masukkan Google Sheets Web App URL terlebih dahulu.");
+        return;
+      }
+
+      try {
+        localStorage.setItem('attendanceSheetsUrl', config.sheetsUrl);
+
+        const response = await fetch(config.sheetsUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            type: 'config',
+            namaMajlis: config.namaMajlis,
+            tarikh: config.tarikh,
+            masa: config.masa,
+            lokasi: config.lokasi,
+            maxGuests: config.maxGuests,
+            pdfUrl: config.hasPdf ? config.pdfUrl : '',
+            whatsappNo: config.whatsappNo
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.result !== 'success') {
+          throw new Error(result.message || 'Tetapan gagal disimpan.');
+        }
+
+        alert("Tetapan Majlis Berjaya Disimpan!\n\nBorang awam sudah menggunakan tetapan ini.");
+      } catch (error) {
+        console.error(error);
+        alert("Ralat menyimpan tetapan ke Google Sheets:\n" + error.message);
+      }
+
+    });
+
+    // 2. TETAMU TEKAN 'SEMAK MAKLUMAT' -> BUKA POPUP
+    document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const masaSemasa = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      const selectedStatus = document.querySelector('input[name="status_kehadiran"]:checked').value;
+
+      globalFormData = {
+        nama_majlis: config.namaMajlis,
+        gelaran: document.getElementById('gelaran').value,
+        nama_penuh: document.getElementById('nama_penuh').value,
+        jawatan: document.getElementById('jawatan').value,
+        jabatan: document.getElementById('jabatan').value,
+        no_tel: document.getElementById('no_tel').value,
+        status_kehadiran: selectedStatus,
+        nama_p2: document.getElementById('nama_p2').value,
+        jawatan_p2: document.getElementById('jawatan_p2').value,
+        nama_wakil: document.getElementById('nama_wakil').value,
+        jawatan_wakil: document.getElementById('jawatan_wakil').value,
+        no_tel_wakil: document.getElementById('no_tel_wakil').value,
+        masa_kehadiran: masaSemasa
+      };
+
+      // Tampilkan maklumat dalam Popup
+      document.getElementById('prev_majlis').textContent = globalFormData.nama_majlis;
+      document.getElementById('prev_nama').textContent = globalFormData.gelaran + " " + globalFormData.nama_penuh;
+      document.getElementById('prev_notel').textContent = globalFormData.no_tel;
+      document.getElementById('prev_jawatan').textContent = globalFormData.jawatan;
+      document.getElementById('prev_jabatan').textContent = globalFormData.jabatan;
+      document.getElementById('prev_status').textContent = globalFormData.status_kehadiran;
+
+      const extraContainer = document.getElementById('prev_extra_container');
+      const extraTitle = document.getElementById('prev_extra_title');
+      const extraContent = document.getElementById('prev_extra_content');
+
+      if (globalFormData.status_kehadiran === 'Hadir (2 Orang)') {
+        extraContainer.classList.remove('hidden');
+        extraTitle.textContent = "MAKLUMAT ORANG KEDUA (PENGIRING)";
+        extraContent.innerHTML = `<div>• <strong>Nama:</strong> ${globalFormData.nama_p2}</div><div>• <strong>Jawatan/Hubungan:</strong> ${globalFormData.jawatan_p2}</div>`;
+      } else if (globalFormData.status_kehadiran === 'Diwakili') {
+        extraContainer.classList.remove('hidden');
+        extraTitle.textContent = "MAKLUMAT WAKIL";
+        extraContent.innerHTML = `<div>• <strong>Nama Wakil:</strong> ${globalFormData.nama_wakil}</div><div>• <strong>Jawatan Wakil:</strong> ${globalFormData.jawatan_wakil}</div><div>• <strong>No. Tel Wakil:</strong> ${globalFormData.no_tel_wakil}</div>`;
+      } else {
+        extraContainer.classList.add('hidden');
+      }
+
+      // Tunjukkan Popup
+      document.getElementById('preview-modal').classList.remove('hidden');
+    });
+
+    function closePreviewModal() {
+      document.getElementById('preview-modal').classList.add('hidden');
+    }
+
+    // 3. SAHKAN DAN HANTAR KE WHATSAPP & GOOGLE SHEETS
+    function confirmAndSubmit() {
+      const btnSubmit = document.getElementById('btn-confirm-submit');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<span>⏳</span> Sedang Memproses...`;
+
+      // Pembinaan Teks Mesej WhatsApp
+      let waText = "*PENGESAHAN KEHADIRAN MAJLIS*\r\n";
+      waText += "------------------------------------\r\n";
+      waText += "*Majlis:* " + globalFormData.nama_majlis + "\r\n";
+      waText += "*Nama:* " + globalFormData.gelaran + " " + globalFormData.nama_penuh + "\r\n";
+      waText += "*Jawatan:* " + globalFormData.jawatan + "\r\n";
+      waText += "*Jabatan/Agensi:* " + globalFormData.jabatan + "\r\n";
+      waText += "*No. Tel:* " + globalFormData.no_tel + "\r\n";
+      waText += "*Masa Pengesahan:* " + globalFormData.masa_kehadiran + "\r\n";
+      waText += "*Status Kehadiran:* *" + globalFormData.status_kehadiran.toUpperCase() + "*\r\n";
+
+      if (globalFormData.status_kehadiran === 'Hadir (2 Orang)') {
+        waText += "\r\n*MAKLUMAT ORANG KEDUA (PENGIRING):*\r\n";
+        waText += "• *Nama:* " + globalFormData.nama_p2 + "\r\n";
+        waText += "• *Jawatan/Hubungan:* " + globalFormData.jawatan_p2 + "\r\n";
+      } else if (globalFormData.status_kehadiran === 'Diwakili') {
+        waText += "\r\n*MAKLUMAT WAKIL HADIR:*\r\n";
+        waText += "• *Nama Wakil:* " + globalFormData.nama_wakil + "\r\n";
+        waText += "• *Jawatan Wakil:* " + globalFormData.jawatan_wakil + "\r\n";
+        waText += "• *No. Tel Wakil:* " + globalFormData.no_tel_wakil + "\r\n";
+      }
+
+      waText += "------------------------------------\r\n";
+      waText += "_Mesej dihantar secara automatik melalui borang pendaftaran._";
+
+      const encodedText = encodeURIComponent(waText);
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      let waUrl = "";
+      if (isMobile) {
+        waUrl = `whatsapp://send?phone=${config.whatsappNo}&text=${encodedText}`;
+      } else {
+        waUrl = `https://web.whatsapp.com/send?phone=${config.whatsappNo}&text=${encodedText}`;
+      }
+
+      // Simpan ke Google Sheets
+      fetch(config.sheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(globalFormData)
+      })
+      .then(() => {
+        closePreviewModal();
+        document.getElementById('guest-section').classList.add('hidden');
+        document.getElementById('success-section').classList.remove('hidden');
+        document.getElementById('btn_whatsapp_manual').href = waUrl;
+
+        setTimeout(() => {
+          window.location.href = waUrl;
+        }, 500);
+      })
+      .catch(error => {
+        alert("Ralat menghantar data: " + error);
+      })
+      .finally(() => {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<span>💬</span> Sahkan & Hantar ke WhatsApp`;
+      });
+    }
+
+    function resetGuestForm() {
+      document.getElementById('attendanceForm').reset();
+      handleStatusChange('reset');
+      document.getElementById('success-section').classList.add('hidden');
+      document.getElementById('guest-section').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
