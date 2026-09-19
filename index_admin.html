@@ -259,13 +259,10 @@
     }
 
     (function loadAdminUrl() {
-      try {
-        const savedUrl = localStorage.getItem('attendanceSheetsUrl') || '';
-        document.getElementById('admin_sheets_url').value = savedUrl;
-        if (savedUrl) loadAdminConfigFromServer();
-      } catch (e) {
-        console.error("Gagal memuat URL backend:", e);
-      }
+      // URL Apps Script ditetapkan terus supaya admin tidak bergantung pada localStorage.
+      const backendUrl = 'https://script.google.com/macros/s/AKfycbxeya0XbPtC6q3zE1AlHqA_zcDOFR-2g6CmGjjV0LMzHOw1h-_rPz8dZLemzizfqfmmdw/exec';
+      document.getElementById('admin_sheets_url').value = backendUrl;
+      loadAdminConfigFromServer();
     })();
 
     // 1. ADMIN SIMPAN TETAPAN
@@ -280,7 +277,7 @@
       config.hasPdf = document.getElementById('admin_enable_pdf').checked;
       config.pdfUrl = document.getElementById('admin_pdf_url').value;
       config.whatsappNo = document.getElementById('admin_whatsapp_no').value.replace(/[^0-9]/g, '');
-      config.sheetsUrl = document.getElementById('admin_sheets_url').value;
+      config.sheetsUrl = 'https://script.google.com/macros/s/AKfycbxeya0XbPtC6q3zE1AlHqA_zcDOFR-2g6CmGjjV0LMzHOw1h-_rPz8dZLemzizfqfmmdw/exec';
 
       document.getElementById('display_nama_majlis').textContent = config.namaMajlis;
       document.getElementById('display_tarikh').textContent = config.tarikh;
@@ -350,6 +347,8 @@
           throw new Error(result.message || 'Tetapan gagal disimpan.');
         }
 
+        // Pastikan config diambil semula selepas berjaya disimpan.
+        await loadAdminConfigFromServer();
         alert("Tetapan Majlis Berjaya Disimpan!\n\nBorang awam sudah menggunakan tetapan ini.");
       } catch (error) {
         console.error(error);
