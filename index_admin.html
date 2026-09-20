@@ -78,12 +78,27 @@
       </div>
     </div>
 
+    <!-- ==================== PENGURUSAN MAJLIS ==================== -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">📋 Senarai Majlis</h2>
+          <p class="text-xs text-slate-500 font-medium mt-1">Pilih majlis untuk edit atau salin link borang tetamu.</p>
+        </div>
+        <button type="button" onclick="startNewEvent()" class="bg-slate-900 hover:bg-slate-800 text-white font-black py-3 px-5 rounded-xl text-sm shadow-lg">＋ Tambah Majlis</button>
+      </div>
+      <div id="event-list" class="space-y-3">
+        <div class="text-sm text-slate-500 bg-slate-50 rounded-xl p-4">Belum memuatkan senarai majlis.</div>
+      </div>
+    </div>
+
     <!-- ==================== BAHAGIAN 1: TETAPAN ADMIN ==================== -->
     <div id="admin-section" class="bg-white p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 mb-8 transition-all">
       <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-6 pb-3 border-b border-slate-100 flex items-center gap-3">
         <span class="p-2 bg-slate-100 rounded-lg text-sm">⚙️</span> Tetapan Admin (Urus Setia)
       </h2>
       <form id="adminForm" class="space-y-5">
+        <input type="hidden" id="admin_event_id" value="">
         <div>
           <label class="block text-xs uppercase tracking-wider font-extrabold text-slate-700 mb-2">Nama Majlis <span class="text-red-500">*</span></label>
           <input type="text" id="admin_nama_majlis" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="Contoh: Majlis Anugerah Cemerlang 2026" required>
@@ -154,7 +169,7 @@
           <input type="url" id="admin_sheets_url" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none font-medium transition text-sm" placeholder="https://script.google.com/macros/s/.../exec" required>
         </div>
 
-        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl transition duration-200 shadow-lg shadow-slate-900/20 active:scale-[0.99] uppercase tracking-wider text-sm mt-4">Simpan Tetapan & Aktifkan Borang</button>
+        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl transition duration-200 shadow-lg shadow-slate-900/20 active:scale-[0.99] uppercase tracking-wider text-sm mt-4">Simpan / Kemas Kini Majlis</button>
       </form>
     </div>
 
@@ -226,44 +241,107 @@
     }
 
     // Load existing configuration from Google Sheets.
-    async function loadAdminConfigFromServer() {
-      const url = document.getElementById('admin_sheets_url').value.trim();
-      if (!url) return;
-
+    (function loadAdminUrl() {
       try {
-        const response = await fetch(url + '?t=' + Date.now());
-        const result = await response.json();
-
-        if (result.result !== 'success') return;
-
-        const savedConfig = result.config || {};
-
-        document.getElementById('admin_nama_majlis').value = savedConfig.namaMajlis || '';
-        document.getElementById('admin_tarikh').value = savedConfig.tarikh || '';
-        document.getElementById('admin_masa').value = savedConfig.masa || '';
-        document.getElementById('admin_lokasi').value = savedConfig.lokasi || '';
-
-        const maxGuestsRadio = document.querySelector(
-          `input[name="admin_max_guests"][value="${savedConfig.maxGuests || '1'}"]`
-        );
-        if (maxGuestsRadio) maxGuestsRadio.checked = true;
-
-        document.getElementById('admin_enable_pdf').checked = !!savedConfig.pdfUrl;
-        document.getElementById('admin_pdf_url').value = savedConfig.pdfUrl || '';
-        togglePdfInput(!!savedConfig.pdfUrl);
-
-        document.getElementById('admin_whatsapp_no').value = savedConfig.whatsappNo || '';
+        const savedUrl = localStorage.getItem('attendanceSheetsUrl') || '';
+        document.getElementById('admin_sheets_url').value = savedUrl;
+        if (savedUrl) { loadEvents(); }
       } catch (e) {
-        console.log("Belum dapat memuat tetapan dari Google Sheets:", e);
+        console.error("Gagal memuat URL backend:", e);
+      }
+    })();
+
+    async function loadEvents() {
+      const url = document.getElementById('admin_sheets_url').value.trim();
+      const list = document.getElementById('event-list');
+      if (!url) {
+        list.innerHTML = '<div class="text-sm text-slate-500 bg-slate-50 rounded-xl p-4">Masukkan URL Google Sheets Web App untuk melihat majlis.</div>';
+        return;
+      }
+      try {
+        const res = await fetch(url + '?t=' + Date.now());
+        const data = await res.json();
+        if (data.result !== 'success') throw new Error(data.message || 'Gagal memuatkan majlis.');
+        const events = data.events || [];
+        if (!events.length) {
+          list.innerHTML = '<div class="text-sm text-slate-500 bg-slate-50 rounded-xl p-4">Belum ada majlis. Tekan ＋ Tambah Majlis.</div>';
+          return;
+        }
+        list.innerHTML = events.map(ev => {
+          const link = 'index.html?idMajlis=' + encodeURIComponent(ev.idMajlis);
+          const status = ev.status || 'Aktif';
+          return `
+            <div class="border border-slate-200 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-black">${ev.idMajlis}</span>
+                  <span class="px-2 py-1 rounded-lg ${status === 'Aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'} text-[10px] font-black">${status}</span>
+                </div>
+                <h3 class="font-extrabold text-slate-900 mt-2">${escapeHtml(ev.namaMajlis)}</h3>
+                <p class="text-xs text-slate-500 mt-1">${escapeHtml(ev.tarikh || '-')} · ${escapeHtml(ev.masa || '-')} · ${escapeHtml(ev.lokasi || '-')}</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="editEvent('${encodeURIComponent(ev.idMajlis)}')" class="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">Edit</button>
+                <a href="${link}" target="_blank" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">Buka Borang</a>
+                <button type="button" onclick="copyEventLink('${link}')" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 text-xs font-extrabold">Salin Link</button>
+              </div>
+            </div>`;
+        }).join('');
+        window.__events = events;
+      } catch (err) {
+        list.innerHTML = '<div class="text-sm text-red-600 bg-red-50 rounded-xl p-4">Gagal memuatkan senarai: ' + escapeHtml(err.message) + '</div>';
       }
     }
 
-    (function loadAdminUrl() {
-      // URL Apps Script ditetapkan terus supaya admin tidak bergantung pada localStorage.
-      const backendUrl = 'https://script.google.com/macros/s/AKfycbxeya0XbPtC6q3zE1AlHqA_zcDOFR-2g6CmGjjV0LMzHOw1h-_rPz8dZLemzizfqfmmdw/exec';
-      document.getElementById('admin_sheets_url').value = backendUrl;
-      loadAdminConfigFromServer();
-    })();
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    }
+
+    function startNewEvent() {
+      document.getElementById('adminForm').reset();
+      document.getElementById('admin_event_id').value = '';
+      document.getElementById('pdf-input-container').classList.add('hidden');
+      document.getElementById('admin_pdf_url').required = false;
+      document.querySelector('input[name="admin_max_guests"][value="1"]').checked = true;
+      document.querySelectorAll('.check-badge').forEach(x => x.classList.add('hidden'));
+      window.scrollTo({top: document.getElementById('adminForm').offsetTop - 30, behavior: 'smooth'});
+    }
+
+    function editEvent(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const ev = (window.__events || []).find(x => String(x.idMajlis) === id);
+      if (!ev) return;
+      document.getElementById('admin_event_id').value = ev.idMajlis;
+      document.getElementById('admin_nama_majlis').value = ev.namaMajlis || '';
+      document.getElementById('admin_tarikh').value = toInputDate(ev.tarikh);
+      document.getElementById('admin_masa').value = toInputTime(ev.masa);
+      document.getElementById('admin_lokasi').value = ev.lokasi || '';
+      const radio = document.querySelector('input[name="admin_max_guests"][value="' + (ev.maxGuests || '1') + '"]');
+      if (radio) radio.checked = true;
+      document.getElementById('admin_enable_pdf').checked = !!ev.pdfUrl;
+      document.getElementById('admin_pdf_url').value = ev.pdfUrl || '';
+      togglePdfInput(!!ev.pdfUrl);
+      document.getElementById('admin_whatsapp_no').value = ev.whatsappNo || '';
+      window.scrollTo({top: document.getElementById('adminForm').offsetTop - 30, behavior: 'smooth'});
+    }
+
+    function toInputDate(v) {
+      if (!v) return '';
+      const m = String(v).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      return m ? `${m[3]}-${m[2]}-${m[1]}` : String(v).slice(0,10);
+    }
+    function toInputTime(v) {
+      if (!v) return '';
+      const m = String(v).match(/(\d{1,2}):(\d{2})/);
+      return m ? String(m[1]).padStart(2,'0') + ':' + m[2] : String(v).slice(0,5);
+    }
+    async function copyEventLink(link) {
+      const full = new URL(link, window.location.href).href;
+      try { await navigator.clipboard.writeText(full); alert('Link borang berjaya disalin.'); }
+      catch(e) { prompt('Salin link ini:', full); }
+    }
+
+    document.getElementById('admin_sheets_url').addEventListener('change', loadEvents);
 
     // 1. ADMIN SIMPAN TETAPAN
     document.getElementById('adminForm').addEventListener('submit', async function(e) {
@@ -277,7 +355,46 @@
       config.hasPdf = document.getElementById('admin_enable_pdf').checked;
       config.pdfUrl = document.getElementById('admin_pdf_url').value;
       config.whatsappNo = document.getElementById('admin_whatsapp_no').value.replace(/[^0-9]/g, '');
-      config.sheetsUrl = 'https://script.google.com/macros/s/AKfycbxeya0XbPtC6q3zE1AlHqA_zcDOFR-2g6CmGjjV0LMzHOw1h-_rPz8dZLemzizfqfmmdw/exec';
+      config.sheetsUrl = document.getElementById('admin_sheets_url').value;
+
+      document.getElementById('display_nama_majlis').textContent = config.namaMajlis;
+      document.getElementById('display_tarikh').textContent = config.tarikh;
+      document.getElementById('display_masa').textContent = config.masa;
+      document.getElementById('display_lokasi').textContent = config.lokasi;
+
+      const radios = document.querySelectorAll('input[name="status_kehadiran"]');
+      radios.forEach(r => r.checked = false);
+      handleStatusChange('reset');
+
+      const optionHadir2 = document.getElementById('option_hadir_2');
+      const optionWakil = document.getElementById('option_wakil');
+      const labelHadirSingle = document.getElementById('label_hadir_single');
+      const subHadirSingle = document.getElementById('sub_hadir_single');
+
+      if (config.maxGuests === '2') {
+        optionHadir2.classList.remove('hidden');
+        optionHadir2.classList.add('flex');
+        optionWakil.classList.add('hidden');
+        optionWakil.classList.remove('flex');
+        labelHadirSingle.textContent = "Hadir (1 Orang)";
+        subHadirSingle.textContent = "Seorang Sahaja";
+        subHadirSingle.classList.remove('hidden');
+      } else {
+        optionHadir2.classList.add('hidden');
+        optionHadir2.classList.remove('flex');
+        optionWakil.classList.remove('hidden');
+        optionWakil.classList.add('flex');
+        labelHadirSingle.textContent = "Hadir";
+        subHadirSingle.classList.add('hidden');
+      }
+
+      const pdfWrapper = document.getElementById('pdf-button-wrapper');
+      if (config.hasPdf && config.pdfUrl) {
+        document.getElementById('btn_download_pdf').href = config.pdfUrl;
+        pdfWrapper.classList.remove('hidden');
+      } else {
+        pdfWrapper.classList.add('hidden');
+      }
 
       if (!config.sheetsUrl) {
         alert("Sila masukkan Google Sheets Web App URL terlebih dahulu.");
@@ -292,6 +409,8 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             type: 'config',
+            idMajlis: document.getElementById('admin_event_id').value.trim(),
+            status: 'Aktif',
             namaMajlis: config.namaMajlis,
             tarikh: config.tarikh,
             masa: config.masa,
@@ -308,9 +427,8 @@
           throw new Error(result.message || 'Tetapan gagal disimpan.');
         }
 
-        // Pastikan config diambil semula selepas berjaya disimpan.
-        await loadAdminConfigFromServer();
-        alert("Tetapan Majlis Berjaya Disimpan!\n\nBorang awam sudah menggunakan tetapan ini.");
+        alert("Majlis berjaya disimpan.\n\nLink borang tetamu boleh digunakan melalui senarai majlis.");
+        await loadEvents();
       } catch (error) {
         console.error(error);
         alert("Ralat menyimpan tetapan ke Google Sheets:\n" + error.message);
@@ -318,6 +436,135 @@
 
     });
 
+    // 2. TETAMU TEKAN 'SEMAK MAKLUMAT' -> BUKA POPUP
+    document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const masaSemasa = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      const selectedStatus = document.querySelector('input[name="status_kehadiran"]:checked').value;
+
+      globalFormData = {
+        nama_majlis: config.namaMajlis,
+        gelaran: document.getElementById('gelaran').value,
+        nama_penuh: document.getElementById('nama_penuh').value,
+        jawatan: document.getElementById('jawatan').value,
+        jabatan: document.getElementById('jabatan').value,
+        no_tel: document.getElementById('no_tel').value,
+        status_kehadiran: selectedStatus,
+        nama_p2: document.getElementById('nama_p2').value,
+        jawatan_p2: document.getElementById('jawatan_p2').value,
+        nama_wakil: document.getElementById('nama_wakil').value,
+        jawatan_wakil: document.getElementById('jawatan_wakil').value,
+        no_tel_wakil: document.getElementById('no_tel_wakil').value,
+        masa_kehadiran: masaSemasa
+      };
+
+      // Tampilkan maklumat dalam Popup
+      document.getElementById('prev_majlis').textContent = globalFormData.nama_majlis;
+      document.getElementById('prev_nama').textContent = globalFormData.gelaran + " " + globalFormData.nama_penuh;
+      document.getElementById('prev_notel').textContent = globalFormData.no_tel;
+      document.getElementById('prev_jawatan').textContent = globalFormData.jawatan;
+      document.getElementById('prev_jabatan').textContent = globalFormData.jabatan;
+      document.getElementById('prev_status').textContent = globalFormData.status_kehadiran;
+
+      const extraContainer = document.getElementById('prev_extra_container');
+      const extraTitle = document.getElementById('prev_extra_title');
+      const extraContent = document.getElementById('prev_extra_content');
+
+      if (globalFormData.status_kehadiran === 'Hadir (2 Orang)') {
+        extraContainer.classList.remove('hidden');
+        extraTitle.textContent = "MAKLUMAT ORANG KEDUA (PENGIRING)";
+        extraContent.innerHTML = `<div>• <strong>Nama:</strong> ${globalFormData.nama_p2}</div><div>• <strong>Jawatan/Hubungan:</strong> ${globalFormData.jawatan_p2}</div>`;
+      } else if (globalFormData.status_kehadiran === 'Diwakili') {
+        extraContainer.classList.remove('hidden');
+        extraTitle.textContent = "MAKLUMAT WAKIL";
+        extraContent.innerHTML = `<div>• <strong>Nama Wakil:</strong> ${globalFormData.nama_wakil}</div><div>• <strong>Jawatan Wakil:</strong> ${globalFormData.jawatan_wakil}</div><div>• <strong>No. Tel Wakil:</strong> ${globalFormData.no_tel_wakil}</div>`;
+      } else {
+        extraContainer.classList.add('hidden');
+      }
+
+      // Tunjukkan Popup
+      document.getElementById('preview-modal').classList.remove('hidden');
+    });
+
+    function closePreviewModal() {
+      document.getElementById('preview-modal').classList.add('hidden');
+    }
+
+    // 3. SAHKAN DAN HANTAR KE WHATSAPP & GOOGLE SHEETS
+    function confirmAndSubmit() {
+      const btnSubmit = document.getElementById('btn-confirm-submit');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<span>⏳</span> Sedang Memproses...`;
+
+      // Pembinaan Teks Mesej WhatsApp
+      let waText = "*PENGESAHAN KEHADIRAN MAJLIS*\r\n";
+      waText += "------------------------------------\r\n";
+      waText += "*Majlis:* " + globalFormData.nama_majlis + "\r\n";
+      waText += "*Nama:* " + globalFormData.gelaran + " " + globalFormData.nama_penuh + "\r\n";
+      waText += "*Jawatan:* " + globalFormData.jawatan + "\r\n";
+      waText += "*Jabatan/Agensi:* " + globalFormData.jabatan + "\r\n";
+      waText += "*No. Tel:* " + globalFormData.no_tel + "\r\n";
+      waText += "*Masa Pengesahan:* " + globalFormData.masa_kehadiran + "\r\n";
+      waText += "*Status Kehadiran:* *" + globalFormData.status_kehadiran.toUpperCase() + "*\r\n";
+
+      if (globalFormData.status_kehadiran === 'Hadir (2 Orang)') {
+        waText += "\r\n*MAKLUMAT ORANG KEDUA (PENGIRING):*\r\n";
+        waText += "• *Nama:* " + globalFormData.nama_p2 + "\r\n";
+        waText += "• *Jawatan/Hubungan:* " + globalFormData.jawatan_p2 + "\r\n";
+      } else if (globalFormData.status_kehadiran === 'Diwakili') {
+        waText += "\r\n*MAKLUMAT WAKIL HADIR:*\r\n";
+        waText += "• *Nama Wakil:* " + globalFormData.nama_wakil + "\r\n";
+        waText += "• *Jawatan Wakil:* " + globalFormData.jawatan_wakil + "\r\n";
+        waText += "• *No. Tel Wakil:* " + globalFormData.no_tel_wakil + "\r\n";
+      }
+
+      waText += "------------------------------------\r\n";
+      waText += "_Mesej dihantar secara automatik melalui borang pendaftaran._";
+
+      const encodedText = encodeURIComponent(waText);
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      let waUrl = "";
+      if (isMobile) {
+        waUrl = `whatsapp://send?phone=${config.whatsappNo}&text=${encodedText}`;
+      } else {
+        waUrl = `https://web.whatsapp.com/send?phone=${config.whatsappNo}&text=${encodedText}`;
+      }
+
+      // Simpan ke Google Sheets
+      fetch(config.sheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(globalFormData)
+      })
+      .then(() => {
+        closePreviewModal();
+        document.getElementById('guest-section').classList.add('hidden');
+        document.getElementById('success-section').classList.remove('hidden');
+        document.getElementById('btn_whatsapp_manual').href = waUrl;
+
+        setTimeout(() => {
+          window.location.href = waUrl;
+        }, 500);
+      })
+      .catch(error => {
+        alert("Ralat menghantar data: " + error);
+      })
+      .finally(() => {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<span>💬</span> Sahkan & Hantar ke WhatsApp`;
+      });
+    }
+
+    function resetGuestForm() {
+      document.getElementById('attendanceForm').reset();
+      handleStatusChange('reset');
+      document.getElementById('success-section').classList.add('hidden');
+      document.getElementById('guest-section').classList.remove('hidden');
+    }
   </script>
 </body>
 </html>
