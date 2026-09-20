@@ -48,15 +48,6 @@
       </div>
     </div>
 
-
-    <div id="config-loading" class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 text-center">
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-4">
-        <div class="w-6 h-6 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
-      </div>
-      <h2 class="text-lg font-extrabold text-slate-900">Memuatkan Borang...</h2>
-      <p class="text-sm text-slate-500 mt-2">Sila tunggu sebentar sementara maklumat majlis dimuatkan.</p>
-    </div>
-
     <div id="config-error" class="hidden bg-white p-8 rounded-3xl shadow-xl border border-rose-200 text-center">
       <div class="text-4xl mb-4">⚠️</div>
       <h2 class="text-xl font-extrabold text-slate-900">Borang Belum Diaktifkan</h2>
@@ -311,6 +302,78 @@
 
 
     <!-- ==================== POPUP / MODAL SEMAKAN MAKLUMAT ==================== -->
+    <div id="preview-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <!-- Header Popup -->
+        <div class="bg-slate-900 text-white p-5 sm:p-6 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">📋</span>
+            <div>
+              <h3 class="font-extrabold text-base sm:text-lg">Pengesahan Maklumat</h3>
+              <p class="text-xs text-slate-300 font-medium">Sila semak maklumat sebelum hantar</p>
+            </div>
+          </div>
+          <button onclick="closePreviewModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+        </div>
+
+        <!-- Kandungan Ringkasan -->
+        <div class="p-6 space-y-4 overflow-y-auto text-sm">
+          
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="block text-[10px] uppercase font-black text-slate-400 tracking-wider">Majlis</span>
+            <span id="prev_majlis" class="font-bold text-slate-800">-</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span class="block text-[10px] uppercase font-black text-slate-400 tracking-wider">Nama Tetamu</span>
+              <span id="prev_nama" class="font-bold text-slate-800">-</span>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span class="block text-[10px] uppercase font-black text-slate-400 tracking-wider">No. Telefon</span>
+              <span id="prev_notel" class="font-bold text-slate-800">-</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span class="block text-[10px] uppercase font-black text-slate-400 tracking-wider">Jawatan</span>
+              <span id="prev_jawatan" class="font-bold text-slate-800">-</span>
+            </div>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span class="block text-[10px] uppercase font-black text-slate-400 tracking-wider">Jabatan / Agensi</span>
+              <span id="prev_jabatan" class="font-bold text-slate-800">-</span>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-slate-900 text-white rounded-xl shadow-inner">
+            <span class="block text-[10px] uppercase font-black text-slate-400 tracking-wider">Status Kehadiran</span>
+            <span id="prev_status" class="font-extrabold text-emerald-400 text-base uppercase">-</span>
+          </div>
+
+          <!-- Pilihan Orang Kedua / Wakil -->
+          <div id="prev_extra_container" class="hidden p-4 bg-amber-50 rounded-xl border border-amber-200/80 space-y-2">
+            <span id="prev_extra_title" class="block text-[10px] uppercase font-black text-amber-700 tracking-wider">Maklumat Tambahan</span>
+            <div id="prev_extra_content" class="text-xs font-semibold text-amber-900 space-y-1"></div>
+          </div>
+
+        </div>
+
+        <!-- Footer Popup / Butang Hantar -->
+        <div class="p-5 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+          <button onclick="closePreviewModal()" class="w-full sm:w-1/3 py-3 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold rounded-xl text-xs transition">
+            ✏️ Edit Semula
+          </button>
+          <button onclick="confirmAndSubmit()" id="btn-confirm-submit" class="w-full sm:w-2/3 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+            <span>💬</span> Sahkan & Hantar ke WhatsApp
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+
     <!-- ==================== PENGESAHAN & BACKUP BUTTON ==================== -->
     <div id="success-section" class="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 hidden text-center transition-all">
       <div class="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full mb-5 font-bold text-3xl shadow-inner">
@@ -351,289 +414,131 @@
 
     let globalFormData = {};
 
+
+    // Format tarikh majlis supaya sentiasa dipaparkan dalam format Malaysia.
+    // Mengendalikan nilai biasa (YYYY-MM-DD) dan nilai ISO/Date dari Google Sheets.
+    function formatEventDate(value) {
+      if (!value) return '-';
+
+      const text = String(value).trim();
+
+      // Jika sudah dalam YYYY-MM-DD, guna terus tanpa timezone conversion.
+      const simpleDate = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (simpleDate) {
+        return `${simpleDate[3]}/${simpleDate[2]}/${simpleDate[1]}`;
+      }
+
+      // Untuk ISO date seperti 2026-09-19T16:00:00.000Z,
+      // tukar UTC kepada waktu Malaysia (UTC+8).
+      const d = new Date(text);
+      if (!isNaN(d.getTime())) {
+        const malaysiaTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+        const day = String(malaysiaTime.getUTCDate()).padStart(2, '0');
+        const month = String(malaysiaTime.getUTCMonth() + 1).padStart(2, '0');
+        const year = malaysiaTime.getUTCFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      return text;
+    }
+
+    // Format masa majlis supaya nilai 1899-12-29... tidak dipaparkan.
+    function formatEventTime(value) {
+      if (!value) return '-';
+
+      const text = String(value).trim();
+
+      // Masa biasa daripada input type=time, contoh 19:01 atau 19:01:35.
+      const simpleTime = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (simpleTime) {
+        return `${simpleTime[1].padStart(2, '0')}:${simpleTime[2]}`;
+      }
+
+      // Untuk ISO time seperti 1899-12-29T23:01:35.000Z,
+      // tukar UTC kepada waktu Malaysia (UTC+8).
+      const d = new Date(text);
+      if (!isNaN(d.getTime())) {
+        const malaysiaTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+        const hours = String(malaysiaTime.getUTCHours()).padStart(2, '0');
+        const minutes = String(malaysiaTime.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      }
+
+      return text;
+    }
+
     async function loadConfig() {
       const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxeya0XbPtC6q3zE1AlHqA_zcDOFR-2g6CmGjjV0LMzHOw1h-_rPz8dZLemzizfqfmmdw/exec';
-      const loading = document.getElementById('config-loading');
-      const guest = document.getElementById('guest-section');
-      const errorBox = document.getElementById('config-error');
 
-      // Jika pernah berjaya load sebelum ini, paparkan cache dahulu supaya
-      // pengguna tidak nampak borang kosong sementara server sedang dibaca.
-      try {
-        const cached = localStorage.getItem('attendanceConfigCache');
-        if (cached) {
-          const cachedConfig = JSON.parse(cached);
-          if (cachedConfig.namaMajlis && cachedConfig.whatsappNo) {
-            config = { ...config, ...cachedConfig, sheetsUrl: SHEETS_URL };
-            applyConfigToForm();
-            loading.classList.add('hidden');
-            guest.classList.remove('hidden');
-          }
-        }
-      } catch (e) {
-        console.log('Cache config tidak dapat dibaca:', e);
+      if (!SHEETS_URL) {
+        document.getElementById('guest-section').classList.add('hidden');
+        document.getElementById('config-error').classList.remove('hidden');
+        return false;
       }
 
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 12000);
-        const response = await fetch(SHEETS_URL + '?t=' + Date.now(), {
-          method: 'GET',
-          cache: 'no-store',
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-
+        const response = await fetch(SHEETS_URL + '?t=' + Date.now());
         const result = await response.json();
+
         if (result.result !== 'success') {
           throw new Error(result.message || 'Tetapan tidak dapat dibaca.');
         }
 
-        config = { ...config, ...result.config, sheetsUrl: SHEETS_URL };
+        config = {
+          ...config,
+          ...result.config,
+          sheetsUrl: SHEETS_URL
+        };
 
         if (!config.namaMajlis || !config.whatsappNo) {
-          loading.classList.add('hidden');
-          guest.classList.add('hidden');
-          errorBox.classList.remove('hidden');
+          document.getElementById('guest-section').classList.add('hidden');
+          document.getElementById('config-error').classList.remove('hidden');
           return false;
         }
 
-        localStorage.setItem('attendanceConfigCache', JSON.stringify({
-          namaMajlis: config.namaMajlis,
-          tarikh: config.tarikh,
-          masa: config.masa,
-          lokasi: config.lokasi,
-          maxGuests: config.maxGuests,
-          hasPdf: config.hasPdf,
-          pdfUrl: config.pdfUrl,
-          whatsappNo: config.whatsappNo
-        }));
+        document.getElementById('display_nama_majlis').textContent = config.namaMajlis;
+        document.getElementById('display_tarikh').textContent = formatEventDate(config.tarikh);
+        document.getElementById('display_masa').textContent = formatEventTime(config.masa);
+        document.getElementById('display_lokasi').textContent = config.lokasi;
 
-        applyConfigToForm();
-        loading.classList.add('hidden');
-        errorBox.classList.add('hidden');
-        guest.classList.remove('hidden');
-        return true;
+        const optionHadir2 = document.getElementById('option_hadir_2');
+        const optionWakil = document.getElementById('option_wakil');
+        const labelHadirSingle = document.getElementById('label_hadir_single');
+        const subHadirSingle = document.getElementById('sub_hadir_single');
 
-      } catch (e) {
-        console.error('Gagal membaca tetapan dari Google Sheets:', e);
-
-        // Kalau cache sudah berjaya dipaparkan, jangan sembunyikan borang.
-        if (config.namaMajlis && config.whatsappNo) {
-          loading.classList.add('hidden');
-          guest.classList.remove('hidden');
-          return true;
+        if (config.maxGuests === '2') {
+          optionHadir2.classList.remove('hidden');
+          optionHadir2.classList.add('flex');
+          optionWakil.classList.add('hidden');
+          optionWakil.classList.remove('flex');
+          labelHadirSingle.textContent = "Hadir (1 Orang)";
+          subHadirSingle.textContent = "Seorang Sahaja";
+          subHadirSingle.classList.remove('hidden');
+        } else {
+          optionHadir2.classList.add('hidden');
+          optionHadir2.classList.remove('flex');
+          optionWakil.classList.remove('hidden');
+          optionWakil.classList.add('flex');
+          labelHadirSingle.textContent = "Hadir";
+          subHadirSingle.classList.add('hidden');
         }
 
-        loading.classList.add('hidden');
-        guest.classList.add('hidden');
-        errorBox.classList.remove('hidden');
-        errorBox.querySelector('p').textContent =
-          e.name === 'AbortError'
-            ? 'Sambungan mengambil masa terlalu lama. Sila cuba refresh halaman.'
-            : 'Sila cuba refresh halaman atau hubungi urus setia majlis.';
+        const pdfWrapper = document.getElementById('pdf-button-wrapper');
+        if (config.hasPdf && config.pdfUrl) {
+          document.getElementById('btn_download_pdf').href = config.pdfUrl;
+          pdfWrapper.classList.remove('hidden');
+        } else {
+          pdfWrapper.classList.add('hidden');
+        }
+
+        return true;
+      } catch (e) {
+        console.error("Gagal membaca tetapan dari Google Sheets:", e);
+        document.getElementById('guest-section').classList.add('hidden');
+        document.getElementById('config-error').classList.remove('hidden');
         return false;
       }
     }
-
-    function applyConfigToForm() {
-      document.getElementById('display_nama_majlis').textContent = config.namaMajlis;
-      document.getElementById('display_tarikh').textContent = config.tarikh || '-';
-      document.getElementById('display_masa').textContent = config.masa || '-';
-      document.getElementById('display_lokasi').textContent = config.lokasi || '-';
-
-      const optionHadir2 = document.getElementById('option_hadir_2');
-      const optionWakil = document.getElementById('option_wakil');
-      const labelHadirSingle = document.getElementById('label_hadir_single');
-      const subHadirSingle = document.getElementById('sub_hadir_single');
-
-      if (String(config.maxGuests) === '2') {
-        optionHadir2.classList.remove('hidden');
-        optionHadir2.classList.add('flex');
-        optionWakil.classList.add('hidden');
-        optionWakil.classList.remove('flex');
-        labelHadirSingle.textContent = 'Hadir (1 Orang)';
-        subHadirSingle.textContent = 'Seorang Sahaja';
-        subHadirSingle.classList.remove('hidden');
-      } else {
-        optionHadir2.classList.add('hidden');
-        optionHadir2.classList.remove('flex');
-        optionWakil.classList.remove('hidden');
-        optionWakil.classList.add('flex');
-        labelHadirSingle.textContent = 'Hadir';
-        subHadirSingle.classList.add('hidden');
-      }
-
-      const pdfWrapper = document.getElementById('pdf-button-wrapper');
-      if (config.hasPdf && config.pdfUrl) {
-        document.getElementById('btn_download_pdf').href = config.pdfUrl;
-        pdfWrapper.classList.remove('hidden');
-      } else {
-        pdfWrapper.classList.add('hidden');
-      }
-    }
-
-    function handleStatusChange(type) {
-      const wakilContainer = document.getElementById('wakil-container');
-      const p2Container = document.getElementById('person2-container');
-
-      const namaWakil = document.getElementById('nama_wakil');
-      const jawatanWakil = document.getElementById('jawatan_wakil');
-      const noTelWakil = document.getElementById('no_tel_wakil');
-
-      const namaP2 = document.getElementById('nama_p2');
-      const jawatanP2 = document.getElementById('jawatan_p2');
-
-      wakilContainer.classList.add('hidden');
-      p2Container.classList.add('hidden');
-      namaWakil.required = false;
-      jawatanWakil.required = false;
-      noTelWakil.required = false;
-      namaP2.required = false;
-      jawatanP2.required = false;
-
-      if (type === 'wakil') {
-        wakilContainer.classList.remove('hidden');
-        namaWakil.required = true;
-        jawatanWakil.required = true;
-        noTelWakil.required = true;
-      } else if (type === 'hadir_2') {
-        p2Container.classList.remove('hidden');
-        namaP2.required = true;
-        jawatanP2.required = true;
-      }
-    }
-
-    document.getElementById('attendanceForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const masaSemasa = new Date().toLocaleTimeString('ms-MY', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-      });
-      const selectedStatus = document.querySelector('input[name="status_kehadiran"]:checked').value;
-
-      globalFormData = {
-        nama_majlis: config.namaMajlis,
-        gelaran: document.getElementById('gelaran').value,
-        nama_penuh: document.getElementById('nama_penuh').value,
-        jawatan: document.getElementById('jawatan').value,
-        jabatan: document.getElementById('jabatan').value,
-        no_tel: document.getElementById('no_tel').value,
-        status_kehadiran: selectedStatus,
-        nama_p2: document.getElementById('nama_p2').value,
-        jawatan_p2: document.getElementById('jawatan_p2').value,
-        nama_wakil: document.getElementById('nama_wakil').value,
-        jawatan_wakil: document.getElementById('jawatan_wakil').value,
-        no_tel_wakil: document.getElementById('no_tel_wakil').value,
-        masa_kehadiran: masaSemasa
-      };
-
-      document.getElementById('prev_majlis').textContent = globalFormData.nama_majlis;
-      document.getElementById('prev_nama').textContent = globalFormData.gelaran + " " + globalFormData.nama_penuh;
-      document.getElementById('prev_notel').textContent = globalFormData.no_tel;
-      document.getElementById('prev_jawatan').textContent = globalFormData.jawatan;
-      document.getElementById('prev_jabatan').textContent = globalFormData.jabatan;
-      document.getElementById('prev_status').textContent = globalFormData.status_kehadiran;
-
-      const extraContainer = document.getElementById('prev_extra_container');
-      const extraTitle = document.getElementById('prev_extra_title');
-      const extraContent = document.getElementById('prev_extra_content');
-
-      if (globalFormData.status_kehadiran === 'Hadir (2 Orang)') {
-        extraContainer.classList.remove('hidden');
-        extraTitle.textContent = "MAKLUMAT ORANG KEDUA (PENGIRING)";
-        extraContent.innerHTML =
-          `<div>• <strong>Nama:</strong> ${globalFormData.nama_p2}</div><div>• <strong>Jawatan/Hubungan:</strong> ${globalFormData.jawatan_p2}</div>`;
-      } else if (globalFormData.status_kehadiran === 'Diwakili') {
-        extraContainer.classList.remove('hidden');
-        extraTitle.textContent = "MAKLUMAT WAKIL";
-        extraContent.innerHTML =
-          `<div>• <strong>Nama Wakil:</strong> ${globalFormData.nama_wakil}</div><div>• <strong>Jawatan Wakil:</strong> ${globalFormData.jawatan_wakil}</div><div>• <strong>No. Tel Wakil:</strong> ${globalFormData.no_tel_wakil}</div>`;
-      } else {
-        extraContainer.classList.add('hidden');
-      }
-
-      document.getElementById('preview-modal').classList.remove('hidden');
-    });
-
-    function closePreviewModal() {
-      document.getElementById('preview-modal').classList.add('hidden');
-    }
-
-    function confirmAndSubmit() {
-      const btnSubmit = document.getElementById('btn-confirm-submit');
-      btnSubmit.disabled = true;
-      btnSubmit.innerHTML = `<span>⏳</span> Sedang Memproses...`;
-
-      let waText = "*PENGESAHAN KEHADIRAN MAJLIS*\r\n";
-      waText += "------------------------------------\r\n";
-      waText += "*Majlis:* " + globalFormData.nama_majlis + "\r\n";
-      waText += "*Nama:* " + globalFormData.gelaran + " " + globalFormData.nama_penuh + "\r\n";
-      waText += "*Jawatan:* " + globalFormData.jawatan + "\r\n";
-      waText += "*Jabatan/Agensi:* " + globalFormData.jabatan + "\r\n";
-      waText += "*No. Tel:* " + globalFormData.no_tel + "\r\n";
-      waText += "*Masa Pengesahan:* " + globalFormData.masa_kehadiran + "\r\n";
-      waText += "*Status Kehadiran:* *" + globalFormData.status_kehadiran.toUpperCase() + "*\r\n";
-
-      if (globalFormData.status_kehadiran === 'Hadir (2 Orang)') {
-        waText += "\r\n*MAKLUMAT ORANG KEDUA (PENGIRING):*\r\n";
-        waText += "• *Nama:* " + globalFormData.nama_p2 + "\r\n";
-        waText += "• *Jawatan/Hubungan:* " + globalFormData.jawatan_p2 + "\r\n";
-      } else if (globalFormData.status_kehadiran === 'Diwakili') {
-        waText += "\r\n*MAKLUMAT WAKIL HADIR:*\r\n";
-        waText += "• *Nama Wakil:* " + globalFormData.nama_wakil + "\r\n";
-        waText += "• *Jawatan Wakil:* " + globalFormData.jawatan_wakil + "\r\n";
-        waText += "• *No. Tel Wakil:* " + globalFormData.no_tel_wakil + "\r\n";
-      }
-
-      waText += "------------------------------------\r\n";
-      waText += "_Mesej dihantar secara automatik melalui borang pendaftaran._";
-
-      const encodedText = encodeURIComponent(waText);
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      let waUrl = "";
-      if (isMobile) {
-        waUrl = `whatsapp://send?phone=${config.whatsappNo}&text=${encodedText}`;
-      } else {
-        waUrl = `https://web.whatsapp.com/send?phone=${config.whatsappNo}&text=${encodedText}`;
-      }
-
-      fetch(config.sheetsUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(globalFormData)
-      })
-      .then(() => {
-        closePreviewModal();
-        document.getElementById('guest-section').classList.add('hidden');
-        document.getElementById('success-section').classList.remove('hidden');
-        document.getElementById('btn_whatsapp_manual').href = waUrl;
-
-        setTimeout(() => {
-          window.location.href = waUrl;
-        }, 500);
-      })
-      .catch(error => {
-        alert("Ralat menghantar data: " + error);
-      })
-      .finally(() => {
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = `<span>💬</span> Sahkan & Hantar ke WhatsApp`;
-      });
-    }
-
-    function resetGuestForm() {
-      document.getElementById('attendanceForm').reset();
-      handleStatusChange('reset');
-      document.getElementById('success-section').classList.add('hidden');
-      document.getElementById('guest-section').classList.remove('hidden');
-    }
-
-    window.addEventListener('storage', function(e) {
-      if (e.key === 'attendanceConfig') location.reload();
-    });
 
     loadConfig();
   </script>
