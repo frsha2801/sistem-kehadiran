@@ -437,8 +437,16 @@
 
     function formatTimeDisplay(value) {
       const v = String(value || '').trim();
-      let m = v.match(/^(\d{1,2}):(\d{2})/);
-      if (m) return `${String(m[1]).padStart(2, '0')}:${m[2]}`;
+      const m = v.match(/^(\d{1,2}):(\d{2})/);
+      if (m) {
+        let hour = Number(m[1]);
+        const minute = m[2];
+        if (hour >= 0 && hour <= 23) {
+          const period = hour >= 12 ? 'PM' : 'AM';
+          hour = hour % 12 || 12;
+          return `${String(hour).padStart(2, '0')}:${minute} ${period}`;
+        }
+      }
       return v || '-';
     }
 
