@@ -364,17 +364,17 @@
       if (!confirm('Adakah anda pasti mahu delete majlis ' + id + ' - ' + name + '?\n\nRekod majlis akan dibuang daripada Senarai Majlis. Rekod kehadiran sedia ada tidak dipadam.')) return;
 
       try {
-        const endpoint = url + (url.includes('?') ? '&' : '?') +
-          'action=delete&idMajlis=' + encodeURIComponent(id) + '&t=' + Date.now();
+        // Guna POST supaya sama seperti fungsi Simpan dan lebih stabil untuk Apps Script.
+        await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ type: 'delete', idMajlis: id })
+        });
 
-        const response = await fetch(endpoint, { cache: 'no-store' });
-        const result = await response.json();
-
-        if (result.result !== 'success') {
-          throw new Error(result.message || 'Majlis gagal dipadam.');
-        }
-
-        alert('Majlis berjaya dipadam daripada Senarai Majlis.');
+        // Beri Apps Script masa untuk tulis ke Google Sheet.
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        alert('Permintaan delete telah dihantar. Senarai akan dikemas kini.');
         await loadEvents();
       } catch (error) {
         console.error(error);
