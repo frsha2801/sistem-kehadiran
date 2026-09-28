@@ -263,7 +263,7 @@
           : `<button type="button" onclick="toggleEventStatus('${encodeURIComponent(ev.idMajlis)}','Aktif')" class="px-4 py-2.5 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-extrabold">Buka Semula</button>`;
         return `<div class="border border-slate-200 rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-black">${escapeHtml(ev.idMajlis)}</span><span class="px-2 py-1 rounded-lg ${status === 'Aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'} text-[10px] font-black">${escapeHtml(status)}</span></div><h3 class="font-extrabold text-slate-900 mt-2">${escapeHtml(ev.namaMajlis)}</h3><p class="text-xs text-slate-500 mt-1">${escapeHtml(ev.tarikh || '-')} · ${escapeHtml(ev.masa || '-')} · ${escapeHtml(ev.lokasi || '-')}</p></div>
-          <div class="flex flex-wrap gap-2"><button type="button" onclick="editEvent('${encodeURIComponent(ev.idMajlis)}')" class="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">Edit</button><a href="${link}" target="_blank" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">Buka Borang</a><button type="button" onclick="copyEventLink('${link}')" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 text-xs font-extrabold">Salin Link</button>${statusButton}</div>
+          <div class="flex flex-wrap gap-2"><button type="button" onclick="editEvent('${encodeURIComponent(ev.idMajlis)}')" class="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">Edit</button><a href="${link}" target="_blank" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">Buka Borang</a><button type="button" onclick="copyEventLink('${link}')" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 text-xs font-extrabold">Salin Link</button>${statusButton}<button type="button" onclick="deleteEvent('${encodeURIComponent(ev.idMajlis)}')" class="px-4 py-2.5 rounded-xl bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold">Delete</button></div>
         </div>`;
       }).join('');
     }
@@ -353,6 +353,33 @@
       const full = new URL(link, window.location.href).href;
       try { await navigator.clipboard.writeText(full); alert('Link borang berjaya disalin.'); }
       catch(e) { prompt('Salin link ini:', full); }
+    }
+
+    async function deleteEvent(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const url = document.getElementById('admin_sheets_url').value.trim() || DEFAULT_SHEETS_URL;
+      const ev = (window.__events || []).find(x => String(x.idMajlis) === id);
+      const name = ev ? ev.namaMajlis : id;
+
+      if (!confirm('Adakah anda pasti mahu delete majlis ' + id + ' - ' + name + '?\n\nRekod majlis akan dibuang daripada Senarai Majlis. Rekod kehadiran sedia ada tidak dipadam.')) return;
+
+      try {
+        const endpoint = url + (url.includes('?') ? '&' : '?') +
+          'action=delete&idMajlis=' + encodeURIComponent(id) + '&t=' + Date.now();
+
+        const response = await fetch(endpoint, { cache: 'no-store' });
+        const result = await response.json();
+
+        if (result.result !== 'success') {
+          throw new Error(result.message || 'Majlis gagal dipadam.');
+        }
+
+        alert('Majlis berjaya dipadam daripada Senarai Majlis.');
+        await loadEvents();
+      } catch (error) {
+        console.error(error);
+        alert('Ralat memadam majlis: ' + error.message);
+      }
     }
 
     document.getElementById('admin_sheets_url').addEventListener('change', loadEvents);
